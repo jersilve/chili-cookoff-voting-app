@@ -14,7 +14,6 @@ AWS CloudShell is a browser-based shell that gives you command-line access to AW
 
 1. **AWS Account**: Active AWS account with appropriate permissions
 2. **Web Browser**: Any modern browser (Chrome, Safari, Firefox, etc.)
-3. **Verified SES Email**: jeremy.r.silverman@gmail.com must be verified in AWS SES
 
 ## Deployment Steps
 
@@ -68,9 +67,9 @@ aws s3 sync . s3://chili-cookoff-source-code-YOUR-UNIQUE-ID/ \
    ./deploy.sh
    ```
 
-5. **Check your email**:
-   - You'll receive an email at jeremy.r.silverman@gmail.com with all URLs and QR codes
-   - The URLs are also displayed in CloudShell output
+5. **Check terminal output**:
+   - URLs are displayed in CloudShell output
+   - QR codes are generated in the qr-codes/ directory
 
 ### Option 2: Deploy from GitHub
 
@@ -128,7 +127,7 @@ CloudShell works great on mobile devices:
 1. **Open AWS Console on your phone's browser**
 2. **Tap the CloudShell icon** (you may need to scroll the top menu)
 3. **Run the deployment commands** (use Option 1 or 2 above)
-4. **Check your email** for the URLs and QR codes
+4. **Check terminal output** for the URLs
 
 **Tip**: For easier typing on mobile, use the S3 method (Option 1) so you only need to type a few commands.
 
@@ -197,7 +196,7 @@ cd ~/chili-cookoff
 
 1. **Use S3 Method**: Upload your project to S3 once, deploy multiple times
 2. **Keep CloudShell Active**: Don't let it timeout during deployment (takes 5-10 minutes)
-3. **Save Output**: Copy the ALB URL from CloudShell output (also sent via email)
+3. **Save Output**: Copy the ALB URL from CloudShell output
 4. **Clean Up**: Always run teardown after your event to avoid charges
 
 ## Cost Considerations
@@ -226,7 +225,7 @@ Here's the complete workflow for deploying from your phone:
      chmod +x deploy.sh
      ./deploy.sh
      ```
-   - Check email for URLs and QR codes
+   - Check terminal output for URLs
    - Start your event!
 
 3. **Teardown from phone** (after event):

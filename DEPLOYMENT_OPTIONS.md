@@ -97,7 +97,6 @@ chmod +x quick-deploy.sh
 | **Setup Required** | ✅ Yes | ⚠️ One-time | ❌ No |
 | **Automation** | ✅ Full | ✅ Full | ❌ Manual |
 | **Cost** | Free | Free | Free |
-| **Email Notification** | ✅ Yes | ✅ Yes | ⚠️ Manual |
 | **QR Code Generation** | ✅ Yes | ✅ Yes | ❌ No |
 
 ---
@@ -121,15 +120,14 @@ chmod +x quick-deploy.sh
 
 ---
 
-## Email Notifications
+## QR Code Generation
 
-All deployment methods automatically send an email to `jeremy.r.silverman@gmail.com` with:
-- Setup page URL and QR code
-- Voting page URL and QR code
-- Leaderboard page URL and QR code
-- Next steps for running your event
+All automated deployment methods (Local and CloudShell) automatically generate QR codes for:
+- Setup page URL
+- Voting page URL
+- Leaderboard page URL
 
-This means you can deploy from anywhere and immediately have everything you need!
+QR codes are saved in the `qr-codes/` directory and displayed in the terminal output.
 
 ---
 
@@ -181,9 +179,9 @@ aws s3 cp s3://YOUR-BUCKET/quick-deploy.sh . && chmod +x quick-deploy.sh && ./qu
 - Permission denied: Run `chmod +x deploy.sh`
 
 ### Email Not Received
-- Check spam folder
-- Verify SES email: `aws ses list-verified-email-addresses --region us-east-1`
-- Check CloudWatch Logs: `aws logs tail /aws/lambda/ChiliCookoffDeploymentNotifier --follow`
+- QR codes are generated locally in the qr-codes/ directory
+- URLs are displayed in terminal output after deployment
+- Check CloudWatch Logs if you encounter issues: `aws logs tail /aws/lambda/ChiliCookoffSetupHandler --follow`
 
 ---
 
@@ -194,7 +192,7 @@ aws s3 cp s3://YOUR-BUCKET/quick-deploy.sh . && chmod +x quick-deploy.sh && ./qu
    - Local: See main README.md
    - CloudShell: See CLOUDSHELL_DEPLOY.md
    - S3 Upload: See S3_UPLOAD_COMMANDS.md
-3. **Deploy and check your email** for URLs and QR codes
+3. **Deploy and check terminal output** for URLs
 4. **Run your event** and have fun!
 5. **Teardown after the event** to avoid charges
 

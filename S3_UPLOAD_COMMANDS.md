@@ -137,5 +137,5 @@ aws s3 sync . s3://chili-cookoff-source-jeremy/ --exclude ".git/*" --exclude "ve
 aws s3 sync s3://chili-cookoff-source-jeremy/ ~/chili-cookoff/
 cd ~/chili-cookoff && chmod +x deploy.sh && ./deploy.sh
 
-# Check email for URLs and QR codes!
+# Check terminal output for URLs and QR codes!
 ```

@@ -1,7 +1,7 @@
 # Chili Cook-Off Voting Application
 
-[![Tests](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/workflows/Tests/badge.svg)](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/actions)
-[![Lint](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/workflows/Lint/badge.svg)](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/actions)
+[![Tests](https://github.com/jersilve/chili-cookoff-voting-app/workflows/Tests/badge.svg)](https://github.com/jersilve/chili-cookoff-voting-app/actions)
+[![Lint](https://github.com/jersilve/chili-cookoff-voting-app/workflows/Lint/badge.svg)](https://github.com/jersilve/chili-cookoff-voting-app/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20DynamoDB-orange.svg)](https://aws.amazon.com/)
@@ -37,7 +37,7 @@ A serverless web application for running chili competitions with ranked voting a
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR-USERNAME/chili-cookoff-voting-app.git
+git clone https://github.com/jersilve/chili-cookoff-voting-app.git
 cd chili-cookoff-voting-app
 
 # Deploy to AWS
@@ -47,7 +47,7 @@ cd chili-cookoff-voting-app
 ./teardown.sh
 ```
 
-That's it! The deployment script will output URLs for setup, voting, and leaderboard pages.
+That's it! The deployment script will output URLs and generate QR codes for setup, voting, and leaderboard pages.
 
 ## Architecture
 
@@ -131,7 +131,7 @@ You can deploy from your phone or any web browser using AWS CloudShell:
    ./deploy.sh
    ```
 
-4. **Check your email** for URLs and QR codes
+4. **Check terminal output** for URLs and QR codes
 
 **See [CLOUDSHELL_DEPLOY.md](CLOUDSHELL_DEPLOY.md) for detailed instructions.**
 
@@ -146,20 +146,8 @@ The deployment script will:
 5. Create CloudFormation stack with all AWS resources
 6. Wait for stack creation to complete (typically 3-5 minutes)
 7. Update Lambda functions with deployment code
-8. **Send deployment notification email** with URLs and QR codes
-9. Output the Application Load Balancer URL
-
-### Deployment Email
-
-After successful deployment, you'll automatically receive an email at `jeremy.r.silverman@gmail.com` containing:
-
-- All application URLs (Setup, Voting, Leaderboard)
-- QR codes for each URL (embedded in the email)
-- Next steps for running your event
-
-This allows you to deploy from anywhere (including your phone via AWS Console) and immediately receive all the information you need to run your event.
-
-**Note**: The sender email address (jeremy.r.silverman@gmail.com) must be verified in AWS SES. This has already been configured for your account.
+8. Generate QR codes for all application URLs
+9. Output the Application Load Balancer URL and all endpoints
 
 ### Deployment Output
 
@@ -169,9 +157,6 @@ Upon successful deployment, you'll see:
 =========================================
 SUCCESS: Deployment completed successfully!
 =========================================
-
-📧 A deployment notification email has been sent to:
-   jeremy.r.silverman@gmail.com
 
 Application URL: http://chili-cookoff-alb-123456789.us-east-1.elb.amazonaws.com
 
@@ -184,9 +169,9 @@ API endpoints:
   - Setup API:       http://chili-cookoff-alb-123456789.us-east-1.elb.amazonaws.com/api/setup
   - Vote API:        http://chili-cookoff-alb-123456789.us-east-1.elb.amazonaws.com/api/vote
   - Leaderboard API: http://chili-cookoff-alb-123456789.us-east-1.elb.amazonaws.com/api/leaderboard
-```
 
-**Check your email** for the deployment notification with QR codes!
+QR codes have been generated in the qr-codes/ directory!
+```
 
 ### Custom Region
 
@@ -370,22 +355,6 @@ Contact your AWS administrator to grant these permissions.
 
 ### Application Issues
 
-#### Issue: "Deployment email not received"
-
-**Problem**: Email notification wasn't sent or was filtered as spam.
-
-**Solution**:
-1. Check your spam/junk folder for emails from jeremy.r.silverman@gmail.com
-2. Verify the sender email is verified in AWS SES:
-   ```bash
-   aws ses list-verified-email-addresses --region us-east-1
-   ```
-3. Check CloudWatch Logs for the deployment notifier Lambda:
-   ```bash
-   aws logs tail /aws/lambda/ChiliCookoffDeploymentNotifier --follow
-   ```
-4. The URLs are also displayed in the terminal after deployment completes
-
 #### Issue: "No entries configured" when voting
 
 **Problem**: Setup hasn't been completed yet.
@@ -513,9 +482,8 @@ If you encounter issues not covered here:
 │   ├── vote_handler.py      # Vote API Lambda function
 │   ├── leaderboard_handler.py  # Leaderboard API Lambda function
 │   ├── static_handler.py    # Static content Lambda function
-│   ├── deployment_notifier.py  # Deployment email Lambda function
-│   ├── setup_requirements.txt  # Dependencies for setup handler
-│   └── deployment_requirements.txt  # Dependencies for deployment notifier
+│   ├── security_utils.py    # Security utilities for input validation
+│   └── setup_requirements.txt  # Dependencies for setup handler
 ├── web/
 │   ├── setup.html          # Setup interface
 │   ├── vote.html           # Voting interface
@@ -643,7 +611,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for de
 ## Support
 
 For issues, questions, or contributions:
-- Open an [issue](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/issues)
-- Submit a [pull request](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/pulls)
+- Open an [issue](https://github.com/jersilve/chili-cookoff-voting-app/issues)
+- Submit a [pull request](https://github.com/jersilve/chili-cookoff-voting-app/pulls)
 - Check the [troubleshooting section](#troubleshooting) in this README
 - Review [CloudWatch Logs](https://console.aws.amazon.com/cloudwatch/) for detailed error information
