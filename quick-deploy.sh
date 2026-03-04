@@ -67,16 +67,27 @@ fi
 # Deploy CloudFormation stack
 print_info "Deploying CloudFormation stack from GitHub..."
 
+# Download template from GitHub
 TEMPLATE_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/infrastructure/template.yaml"
+TEMPLATE_FILE="/tmp/chili-cookoff-template-$$.yaml"
+
+print_info "Downloading CloudFormation template..."
+if ! curl -s -f "$TEMPLATE_URL" -o "$TEMPLATE_FILE"; then
+    print_error "Failed to download template from GitHub"
+    exit 1
+fi
 
 aws cloudformation create-stack \
     --stack-name "$STACK_NAME" \
-    --template-url "$TEMPLATE_URL" \
+    --template-body "file://${TEMPLATE_FILE}" \
     --parameters \
         "ParameterKey=GitHubRepo,ParameterValue=${GITHUB_REPO}" \
         "ParameterKey=GitHubBranch,ParameterValue=${GITHUB_BRANCH}" \
     --capabilities CAPABILITY_NAMED_IAM \
     --region "$REGION" > /dev/null
+
+# Clean up template file
+rm -f "$TEMPLATE_FILE"
 
 print_success "Stack creation initiated"
 

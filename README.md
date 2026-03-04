@@ -119,9 +119,10 @@ STACK_NAME=my-chili-event ./quick-deploy.sh
 2. Make your changes
 3. Deploy from your fork:
    ```bash
+   curl -s https://raw.githubusercontent.com/YOUR-USERNAME/chili-cookoff-voting-app/main/infrastructure/template.yaml -o template.yaml
    aws cloudformation create-stack \
      --stack-name my-custom-app \
-     --template-url https://raw.githubusercontent.com/YOUR-USERNAME/chili-cookoff-voting-app/main/infrastructure/template.yaml \
+     --template-body file://template.yaml \
      --parameters ParameterKey=GitHubRepo,ParameterValue=YOUR-USERNAME/chili-cookoff-voting-app \
      --capabilities CAPABILITY_NAMED_IAM
    ```

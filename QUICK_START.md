@@ -24,9 +24,13 @@ Or clone the repo and run:
 ### Option 2: Direct CloudFormation Deploy
 
 ```bash
+# Download template
+curl -s https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template.yaml -o template.yaml
+
+# Deploy
 aws cloudformation create-stack \
   --stack-name chili-cookoff-voting-app \
-  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template.yaml \
+  --template-body file://template.yaml \
   --parameters \
       ParameterKey=GitHubRepo,ParameterValue=jersilve/chili-cookoff-voting-app \
       ParameterKey=GitHubBranch,ParameterValue=main \
@@ -112,9 +116,13 @@ GITHUB_BRANCH=develop ./quick-deploy.sh
 Or:
 
 ```bash
+# Download template from specific branch
+curl -s https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/develop/infrastructure/template.yaml -o template.yaml
+
+# Deploy
 aws cloudformation create-stack \
   --stack-name chili-cookoff-voting-app \
-  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/develop/infrastructure/template.yaml \
+  --template-body file://template.yaml \
   --parameters \
       ParameterKey=GitHubBranch,ParameterValue=develop \
   --capabilities CAPABILITY_NAMED_IAM
@@ -217,9 +225,13 @@ After deployment:
 2. Make your changes
 3. Deploy from your fork:
    ```bash
+   # Download your template
+   curl -s https://raw.githubusercontent.com/YOUR-USERNAME/chili-cookoff-voting-app/main/infrastructure/template.yaml -o template.yaml
+   
+   # Deploy
    aws cloudformation create-stack \
      --stack-name my-custom-app \
-     --template-url https://raw.githubusercontent.com/YOUR-USERNAME/chili-cookoff-voting-app/main/infrastructure/template-github.yaml \
+     --template-body file://template.yaml \
      --parameters \
          ParameterKey=GitHubRepo,ParameterValue=YOUR-USERNAME/chili-cookoff-voting-app \
      --capabilities CAPABILITY_NAMED_IAM
@@ -245,9 +257,10 @@ Add to your GitHub Actions:
 ```yaml
 - name: Deploy to AWS
   run: |
+    curl -s https://raw.githubusercontent.com/${{ github.repository }}/main/infrastructure/template.yaml -o template.yaml
     aws cloudformation create-stack \
       --stack-name chili-cookoff-${{ github.sha }} \
-      --template-url https://raw.githubusercontent.com/${{ github.repository }}/main/infrastructure/template-github.yaml \
+      --template-body file://template.yaml \
       --capabilities CAPABILITY_NAMED_IAM
 ```
 
