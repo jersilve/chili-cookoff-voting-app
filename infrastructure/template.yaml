@@ -1,7 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Chili Cook-Off Voting Application Infrastructure'
+Description: 'Chili Cook-Off Voting Application - GitHub Direct Deploy'
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: jersilve/chili-cookoff-voting-app
+    Description: GitHub repository (owner/repo)
+  
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch to deploy from
 
 Resources:
+  # VPC and Networking (same as before)
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -93,6 +105,7 @@ Resources:
         - Key: Name
           Value: ChiliCookoffALBSG
 
+  # DynamoDB Table
   ChiliCookoffData:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -116,9 +129,8 @@ Resources:
       Tags:
         - Key: Application
           Value: ChiliCookoffVotingApp
-        - Key: Environment
-          Value: Production
 
+  # IAM Role for Lambda Functions
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -144,16 +156,142 @@ Resources:
                   - dynamodb:Scan
                   - dynamodb:BatchWriteItem
                 Resource: !GetAtt ChiliCookoffData.Arn
-        - PolicyName: SESAccess
+
+  # IAM Role for Code Updater Lambda
+  CodeUpdaterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ChiliCookoffCodeUpdaterRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: LambdaUpdateAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - ses:SendEmail
-                  - ses:SendRawEmail
-                Resource: '*'
+                  - lambda:UpdateFunctionCode
+                  - lambda:GetFunction
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:ChiliCookoff*'
 
+  # Code Updater Lambda - Downloads code from GitHub and updates Lambda functions
+  CodeUpdaterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ChiliCookoffCodeUpdater
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !GetAtt CodeUpdaterRole.Arn
+      Timeout: 300
+      MemorySize: 512
+      Code:
+        ZipFile: |
+          import json
+          import urllib.request
+          import urllib.error
+          import boto3
+          import zipfile
+          import io
+          import os
+          import cfnresponse
+          
+          lambda_client = boto3.client('lambda')
+          
+          def lambda_handler(event, context):
+              print(f"Event: {json.dumps(event)}")
+              
+              try:
+                  request_type = event['RequestType']
+                  
+                  if request_type == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+                  
+                  if request_type in ['Create', 'Update']:
+                      github_repo = event['ResourceProperties']['GitHubRepo']
+                      github_branch = event['ResourceProperties']['GitHubBranch']
+                      
+                      print(f"Downloading code from GitHub: {github_repo} @ {github_branch}")
+                      
+                      # Download and update each Lambda function
+                      functions = [
+                          ('ChiliCookoffSetupHandler', 'lambda/setup_handler.py', 'setup_handler'),
+                          ('ChiliCookoffVoteHandler', 'lambda/vote_handler.py', 'vote_handler'),
+                          ('ChiliCookoffLeaderboardHandler', 'lambda/leaderboard_handler.py', 'leaderboard_handler'),
+                          ('ChiliCookoffStaticHandler', 'lambda/static_handler.py', 'static_handler')
+                      ]
+                      
+                      for function_name, handler_path, handler_module in functions:
+                          update_lambda_from_github(function_name, handler_path, handler_module, github_repo, github_branch)
+                      
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                          'Message': 'Lambda functions updated successfully from GitHub'
+                      })
+                  
+              except Exception as e:
+                  print(f"Error: {str(e)}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {
+                      'Message': str(e)
+                  })
+          
+          def update_lambda_from_github(function_name, handler_path, handler_module, github_repo, github_branch):
+              """Download code from GitHub and update Lambda function"""
+              print(f"Updating {function_name}...")
+              
+              # Create zip file in memory
+              zip_buffer = io.BytesIO()
+              
+              with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                  # Download main handler file
+                  handler_url = f"https://raw.githubusercontent.com/{github_repo}/{github_branch}/{handler_path}"
+                  handler_code = download_file(handler_url)
+                  zip_file.writestr(f"{handler_module}.py", handler_code)
+                  
+                  # Download security_utils.py (needed by all handlers)
+                  security_utils_url = f"https://raw.githubusercontent.com/{github_repo}/{github_branch}/lambda/security_utils.py"
+                  security_utils_code = download_file(security_utils_url)
+                  zip_file.writestr("security_utils.py", security_utils_code)
+                  
+                  # For static handler, download HTML/CSS files
+                  if function_name == 'ChiliCookoffStaticHandler':
+                      static_files = [
+                          'web/setup.html',
+                          'web/vote.html',
+                          'web/leaderboard.html',
+                          'web/styles.css'
+                      ]
+                      for static_file in static_files:
+                          file_url = f"https://raw.githubusercontent.com/{github_repo}/{github_branch}/{static_file}"
+                          file_content = download_file(file_url)
+                          filename = os.path.basename(static_file)
+                          zip_file.writestr(f"static/{filename}", file_content)
+              
+              # Update Lambda function
+              zip_buffer.seek(0)
+              lambda_client.update_function_code(
+                  FunctionName=function_name,
+                  ZipFile=zip_buffer.read()
+              )
+              
+              print(f"Updated {function_name} successfully")
+          
+          def download_file(url):
+              """Download file from URL"""
+              try:
+                  with urllib.request.urlopen(url) as response:
+                      return response.read().decode('utf-8')
+              except urllib.error.HTTPError as e:
+                  raise Exception(f"Failed to download {url}: {e.code} {e.reason}")
+
+  # Lambda Functions (with placeholder code)
   SetupLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -166,7 +304,7 @@ Resources:
       Code:
         ZipFile: |
           def lambda_handler(event, context):
-              return {'statusCode': 200, 'body': 'Setup handler placeholder'}
+              return {'statusCode': 200, 'body': 'Setup handler - will be updated from GitHub'}
       Environment:
         Variables:
           TABLE_NAME: !Ref ChiliCookoffData
@@ -183,7 +321,7 @@ Resources:
       Code:
         ZipFile: |
           def lambda_handler(event, context):
-              return {'statusCode': 200, 'body': 'Vote handler placeholder'}
+              return {'statusCode': 200, 'body': 'Vote handler - will be updated from GitHub'}
       Environment:
         Variables:
           TABLE_NAME: !Ref ChiliCookoffData
@@ -200,7 +338,7 @@ Resources:
       Code:
         ZipFile: |
           def lambda_handler(event, context):
-              return {'statusCode': 200, 'body': 'Leaderboard handler placeholder'}
+              return {'statusCode': 200, 'body': 'Leaderboard handler - will be updated from GitHub'}
       Environment:
         Variables:
           TABLE_NAME: !Ref ChiliCookoffData
@@ -217,11 +355,25 @@ Resources:
       Code:
         ZipFile: |
           def lambda_handler(event, context):
-              return {'statusCode': 200, 'body': 'Static handler placeholder'}
+              return {'statusCode': 200, 'body': 'Static handler - will be updated from GitHub'}
       Environment:
         Variables:
           TABLE_NAME: !Ref ChiliCookoffData
 
+  # Custom Resource to trigger code update from GitHub
+  CodeUpdateTrigger:
+    Type: Custom::CodeUpdater
+    DependsOn:
+      - SetupLambdaFunction
+      - VoteLambdaFunction
+      - LeaderboardLambdaFunction
+      - StaticLambdaFunction
+    Properties:
+      ServiceToken: !GetAtt CodeUpdaterFunction.Arn
+      GitHubRepo: !Ref GitHubRepo
+      GitHubBranch: !Ref GitHubBranch
+
+  # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -235,6 +387,7 @@ Resources:
       SecurityGroups:
         - !Ref ALBSecurityGroup
 
+  # Target Groups
   SetupTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: SetupLambdaInvokePermission
@@ -271,6 +424,7 @@ Resources:
       Targets:
         - Id: !GetAtt StaticLambdaFunction.Arn
 
+  # ALB Listener and Rules
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -333,6 +487,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref StaticTargetGroup
 
+  # Lambda Invoke Permissions
   SetupLambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -362,56 +517,28 @@ Resources:
       Principal: elasticloadbalancing.amazonaws.com
 
 Outputs:
-  TableName:
-    Description: DynamoDB table name
-    Value: !Ref ChiliCookoffData
-    Export:
-      Name: !Sub '${AWS::StackName}-TableName'
-  
-  TableArn:
-    Description: DynamoDB table ARN
-    Value: !GetAtt ChiliCookoffData.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-TableArn'
-  
-  LambdaExecutionRoleArn:
-    Description: Lambda execution role ARN
-    Value: !GetAtt LambdaExecutionRole.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-LambdaExecutionRoleArn'
-  
-  SetupLambdaArn:
-    Description: Setup Lambda function ARN
-    Value: !GetAtt SetupLambdaFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-SetupLambdaArn'
-  
-  VoteLambdaArn:
-    Description: Vote Lambda function ARN
-    Value: !GetAtt VoteLambdaFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-VoteLambdaArn'
-  
-  LeaderboardLambdaArn:
-    Description: Leaderboard Lambda function ARN
-    Value: !GetAtt LeaderboardLambdaFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-LeaderboardLambdaArn'
-  
-  StaticLambdaArn:
-    Description: Static Lambda function ARN
-    Value: !GetAtt StaticLambdaFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-StaticLambdaArn'
-  
-  ALBDNSName:
-    Description: Application Load Balancer DNS Name
-    Value: !GetAtt ApplicationLoadBalancer.DNSName
-    Export:
-      Name: !Sub '${AWS::StackName}-ALBDNSName'
-  
   ALBURL:
     Description: Application Load Balancer URL
     Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
     Export:
       Name: !Sub '${AWS::StackName}-ALBURL'
+  
+  SetupURL:
+    Description: Setup page URL
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/static/setup.html'
+  
+  VotingURL:
+    Description: Voting page URL
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/static/vote.html'
+  
+  LeaderboardURL:
+    Description: Leaderboard page URL
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/static/leaderboard.html'
+  
+  GitHubRepo:
+    Description: GitHub repository used for deployment
+    Value: !Ref GitHubRepo
+  
+  GitHubBranch:
+    Description: GitHub branch used for deployment
+    Value: !Ref GitHubBranch

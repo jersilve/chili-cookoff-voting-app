@@ -67,7 +67,7 @@ fi
 # Deploy CloudFormation stack
 print_info "Deploying CloudFormation stack from GitHub..."
 
-TEMPLATE_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/infrastructure/template-github.yaml"
+TEMPLATE_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/infrastructure/template.yaml"
 
 aws cloudformation create-stack \
     --stack-name "$STACK_NAME" \

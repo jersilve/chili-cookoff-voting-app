@@ -26,7 +26,7 @@ Or clone the repo and run:
 ```bash
 aws cloudformation create-stack \
   --stack-name chili-cookoff-voting-app \
-  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template-github.yaml \
+  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template.yaml \
   --parameters \
       ParameterKey=GitHubRepo,ParameterValue=jersilve/chili-cookoff-voting-app \
       ParameterKey=GitHubBranch,ParameterValue=main \
@@ -99,7 +99,7 @@ Or:
 ```bash
 aws cloudformation create-stack \
   --stack-name my-chili-event \
-  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template-github.yaml \
+  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/main/infrastructure/template.yaml \
   --capabilities CAPABILITY_NAMED_IAM
 ```
 
@@ -114,7 +114,7 @@ Or:
 ```bash
 aws cloudformation create-stack \
   --stack-name chili-cookoff-voting-app \
-  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/develop/infrastructure/template-github.yaml \
+  --template-url https://raw.githubusercontent.com/jersilve/chili-cookoff-voting-app/develop/infrastructure/template.yaml \
   --parameters \
       ParameterKey=GitHubBranch,ParameterValue=develop \
   --capabilities CAPABILITY_NAMED_IAM
