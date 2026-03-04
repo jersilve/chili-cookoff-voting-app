@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chili Cook-Off Leaderboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+        .last-updated {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        thead {
+            background-color: #d32f2f;
+            color: white;
+        }
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        th.rank-col {
+            width: 80px;
+            text-align: center;
+        }
+        th.points-col {
+            width: 100px;
+            text-align: center;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        td.rank-col {
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #d32f2f;
+        }
+        td.points-col {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        .no-votes {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        .medal {
+            font-size: 24px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="eventTitle">🏆 Chili Cook-Off Leaderboard</h1>
+        <div class="last-updated" id="lastUpdated">Loading...</div>
+        <div class="last-updated" id="voterCount" style="margin-top: -20px; margin-bottom: 20px;"></div>
+        
+        <div id="loading" class="loading">
+            Loading rankings...
+        </div>
+        
+        <div id="error" class="error"></div>
+        
+        <table id="leaderboardTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th class="rank-col">Rank</th>
+                    <th>Entry Name</th>
+                    <th class="points-col">Points</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+            </tbody>
+        </table>
+        
+        <div id="noVotes" class="no-votes" style="display: none;">
+            No votes submitted yet. Be the first to vote!
+        </div>
+    </div>
+
+    <script>
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const leaderboardTable = document.getElementById('leaderboardTable');
+        const leaderboardBody = document.getElementById('leaderboardBody');
+        const noVotesDiv = document.getElementById('noVotes');
+        const lastUpdatedDiv = document.getElementById('lastUpdated');
+        const voterCountDiv = document.getElementById('voterCount');
+        
+        let refreshInterval;
+
+        // Fetch and display leaderboard rankings
+        async function fetchLeaderboard() {
+            try {
+                const response = await fetch('/api/leaderboard');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch leaderboard');
+                }
+                
+                const data = await response.json();
+                
+                // Update event title if available
+                if (data.eventTitle) {
+                    document.getElementById('eventTitle').textContent = `🏆 ${data.eventTitle} - Leaderboard`;
+                }
+                
+                // Hide loading and error
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                
+                // Update last updated timestamp
+                if (data.timestamp) {
+                    const timestamp = new Date(data.timestamp);
+                    lastUpdatedDiv.textContent = `Last updated: ${timestamp.toLocaleString()}`;
+                } else {
+                    lastUpdatedDiv.textContent = `Last updated: ${new Date().toLocaleString()}`;
+                }
+                
+                // Update voter count
+                const totalVoters = data.totalVoters || 0;
+                const voterText = totalVoters === 1 ? 'voter' : 'voters';
+                voterCountDiv.textContent = `Total ${voterText}: ${totalVoters}`;
+                
+                // Check if there are any rankings
+                if (!data.rankings || data.rankings.length === 0) {
+                    // No votes yet
+                    leaderboardTable.style.display = 'none';
+                    noVotesDiv.style.display = 'block';
+                } else {
+                    // Display rankings
+                    noVotesDiv.style.display = 'none';
+                    leaderboardTable.style.display = 'table';
+                    displayRankings(data.rankings);
+                }
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.textContent = 'Unable to load leaderboard. Retrying...';
+                errorDiv.style.display = 'block';
+                console.error('Error fetching leaderboard:', error);
+            }
+        }
+
+        // Display rankings in the table
+        function displayRankings(rankings) {
+            // Clear existing rows
+            leaderboardBody.innerHTML = '';
+            
+            // Rankings should already be sorted by points descending from the API
+            let currentRank = 1;
+            let previousPoints = null;
+            
+            rankings.forEach((ranking, index) => {
+                const row = document.createElement('tr');
+                
+                // Determine rank - if points are same as previous, use same rank
+                if (previousPoints !== null && ranking.points === previousPoints) {
+                    // Same points as previous entry, keep same rank
+                } else {
+                    // Different points, update rank to current position
+                    currentRank = index + 1;
+                }
+                
+                previousPoints = ranking.points;
+                
+                // Rank column with medal for top 3
+                const rankCell = document.createElement('td');
+                rankCell.className = 'rank-col';
+                let rankDisplay = currentRank.toString();
+                
+                // Add medals for top 3 ranks (not positions)
+                if (currentRank === 1) {
+                    rankDisplay = '<span class="medal">🥇</span>' + currentRank;
+                } else if (currentRank === 2) {
+                    rankDisplay = '<span class="medal">🥈</span>' + currentRank;
+                } else if (currentRank === 3) {
+                    rankDisplay = '<span class="medal">🥉</span>' + currentRank;
+                }
+                
+                rankCell.innerHTML = rankDisplay;
+                row.appendChild(rankCell);
+                
+                // Entry name column
+                const nameCell = document.createElement('td');
+                nameCell.textContent = ranking.entry;
+                row.appendChild(nameCell);
+                
+                // Points column
+                const pointsCell = document.createElement('td');
+                pointsCell.className = 'points-col';
+                pointsCell.textContent = ranking.points;
+                row.appendChild(pointsCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+
+        // Start auto-refresh polling every 5 seconds
+        function startAutoRefresh() {
+            // Initial fetch
+            fetchLeaderboard();
+            
+            // Set up polling interval (5000ms = 5 seconds)
+            refreshInterval = setInterval(fetchLeaderboard, 5000);
+        }
+
+        // Stop auto-refresh (useful for cleanup)
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        // Start auto-refresh when page loads
+        startAutoRefresh();
+        
+        // Clean up interval when page is unloaded
+        window.addEventListener('beforeunload', stopAutoRefresh);
+    </script>
+</body>
+</html>

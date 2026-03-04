@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chili Cook-Off Voting</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: white;
+        }
+        select:focus {
+            outline: none;
+            border-color: #d32f2f;
+        }
+        button {
+            background-color: #d32f2f;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .choice-label {
+            font-size: 18px;
+            color: #d32f2f;
+        }
+        .voter-id-display {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .voter-id-display span {
+            font-family: monospace;
+            font-size: 16px;
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .add-voter-btn {
+            background-color: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            width: auto;
+        }
+        .add-voter-btn:hover {
+            background-color: #45a049;
+        }
+        .new-voter-id {
+            background-color: #e8f5e9;
+            border: 1px solid #4caf50;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .new-voter-id span {
+            font-family: monospace;
+            font-size: 14px;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="eventTitle">🌶️ Cast Your Vote</h1>
+        
+        <div class="voter-id-display">
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label for="voterIdInput">Voter ID:</label>
+                <input type="text" id="voterIdInput" style="display: none;" placeholder="Enter your voter ID" maxlength="8" />
+                <select id="voterIdSelect" style="display: none;">
+                    <option value="">-- Select voter ID --</option>
+                </select>
+            </div>
+            <button type="button" class="add-voter-btn" id="addVoterBtn">I have a kid with me who wants to vote</button>
+            <p style="font-size: 12px; color: #666; margin-top: 10px; text-align: center;">Only needed if you have 2 or more voters using the same device</p>
+            <div id="newVoterIds"></div>
+        </div>
+        
+        <div id="loading" class="loading">
+            Loading entries...
+        </div>
+        
+        <form id="voteForm" style="display: none;">
+            <div class="form-group">
+                <label for="firstChoice" class="choice-label">🥇 First Choice (3 points):</label>
+                <select id="firstChoice" name="firstChoice" required>
+                    <option value="">-- Select your first choice --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="secondChoice" class="choice-label">🥈 Second Choice (2 points):</label>
+                <select id="secondChoice" name="secondChoice" required>
+                    <option value="">-- Select your second choice --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="thirdChoice" class="choice-label">🥉 Third Choice (1 point):</label>
+                <select id="thirdChoice" name="thirdChoice" required>
+                    <option value="">-- Select your third choice --</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitBtn">Submit Vote</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const loadingDiv = document.getElementById('loading');
+        const voteForm = document.getElementById('voteForm');
+        const firstChoiceSelect = document.getElementById('firstChoice');
+        const secondChoiceSelect = document.getElementById('secondChoice');
+        const thirdChoiceSelect = document.getElementById('thirdChoice');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+        const voterIdInput = document.getElementById('voterIdInput');
+        const voterIdSelect = document.getElementById('voterIdSelect');
+        const addVoterBtn = document.getElementById('addVoterBtn');
+        const newVoterIdsDiv = document.getElementById('newVoterIds');
+        
+        let entries = [];
+        let voterId = null;
+        let voterIds = []; // Array to store all voter IDs
+
+        // Get all voter IDs from localStorage
+        function getAllVoterIds() {
+            const storedIds = localStorage.getItem('chilicookoff_voter_ids');
+            if (storedIds) {
+                return JSON.parse(storedIds);
+            }
+            
+            // Check for legacy single voter ID
+            const legacyId = localStorage.getItem('chilicookoff_voter_id');
+            if (legacyId) {
+                // Migrate to new format
+                const ids = [legacyId];
+                localStorage.setItem('chilicookoff_voter_ids', JSON.stringify(ids));
+                localStorage.removeItem('chilicookoff_voter_id');
+                return ids;
+            }
+            
+            return [];
+        }
+
+        // Save voter IDs to localStorage
+        function saveVoterIds(ids) {
+            localStorage.setItem('chilicookoff_voter_ids', JSON.stringify(ids));
+        }
+
+        // Generate or retrieve voter ID
+        function getVoterId() {
+            voterIds = getAllVoterIds();
+            
+            if (voterIds.length === 0) {
+                // Generate new voter ID (8 character alphanumeric)
+                const id = generateVoterId();
+                voterIds.push(id);
+                saveVoterIds(voterIds);
+            }
+            
+            return voterIds[0]; // Return first ID as default
+        }
+
+        // Generate random voter ID
+        function generateVoterId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous characters
+            let id = '';
+            for (let i = 0; i < 8; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+
+        // Update voter ID UI based on number of IDs
+        function updateVoterIdUI() {
+            if (voterIds.length === 1) {
+                // Show input field for single voter
+                voterIdInput.style.display = 'block';
+                voterIdSelect.style.display = 'none';
+                voterIdInput.value = voterIds[0];
+                voterId = voterIds[0];
+            } else {
+                // Show dropdown for multiple voters
+                voterIdInput.style.display = 'none';
+                voterIdSelect.style.display = 'block';
+                
+                // Clear and populate dropdown
+                voterIdSelect.innerHTML = '<option value="">-- Select voter ID --</option>';
+                voterIds.forEach(id => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = id;
+                    voterIdSelect.appendChild(option);
+                });
+                
+                // Select first voter by default
+                voterIdSelect.value = voterIds[0];
+                voterId = voterIds[0];
+            }
+        }
+
+        // Initialize voter ID on page load
+        voterId = getVoterId();
+        updateVoterIdUI();
+
+        // Handle voter ID input change
+        voterIdInput.addEventListener('input', function() {
+            voterId = voterIdInput.value.toUpperCase();
+            voterIdInput.value = voterId;
+        });
+
+        // Handle voter ID select change
+        voterIdSelect.addEventListener('change', function() {
+            voterId = voterIdSelect.value;
+        });
+
+        // Handle add voter button click
+        addVoterBtn.addEventListener('click', function() {
+            const newVoterId = generateVoterId();
+            
+            // Add to voter IDs array and save
+            voterIds.push(newVoterId);
+            saveVoterIds(voterIds);
+            
+            // Update UI
+            updateVoterIdUI();
+            
+            // Create new voter ID display element
+            const newVoterDiv = document.createElement('div');
+            newVoterDiv.className = 'new-voter-id';
+            newVoterDiv.innerHTML = `
+                <strong>New Voter ID Created:</strong> <span>${newVoterId}</span>
+                <p style="font-size: 11px; color: #666; margin: 5px 0 0 0;">This ID has been added to the dropdown above</p>
+            `;
+            
+            newVoterIdsDiv.appendChild(newVoterDiv);
+            
+            // Show success message
+            showMessage('New voter ID created and added to the list!', 'success');
+            
+            // Auto-hide the new voter notification after 5 seconds
+            setTimeout(() => {
+                newVoterDiv.remove();
+            }, 5000);
+        });
+
+        // Fetch entries from leaderboard API on page load
+        async function loadEntries() {
+            try {
+                const response = await fetch('/api/leaderboard');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch entries');
+                }
+                
+                const data = await response.json();
+                
+                // Update event title if available
+                if (data.eventTitle) {
+                    document.getElementById('eventTitle').textContent = `🌶️ ${data.eventTitle}`;
+                }
+                
+                // Extract unique entry names from rankings
+                // If no votes yet, rankings will be empty, so we need to handle that
+                if (data.rankings && data.rankings.length > 0) {
+                    entries = data.rankings.map(r => r.entry);
+                } else {
+                    // No votes yet, try to get entries from the entries endpoint if available
+                    // For now, show error message
+                    throw new Error('No entries configured yet');
+                }
+                
+                if (entries.length === 0) {
+                    throw new Error('No entries configured yet');
+                }
+                
+                // Populate dropdowns
+                populateDropdowns();
+                
+                // Show form, hide loading
+                loadingDiv.style.display = 'none';
+                voteForm.style.display = 'block';
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                showMessage('No entries configured yet. Please contact the organizer.', 'error');
+            }
+        }
+
+        // Populate all three dropdown selects with entries
+        function populateDropdowns() {
+            entries.forEach(entry => {
+                // Add to first choice
+                const option1 = document.createElement('option');
+                option1.value = entry;
+                option1.textContent = entry;
+                firstChoiceSelect.appendChild(option1);
+                
+                // Add to second choice
+                const option2 = document.createElement('option');
+                option2.value = entry;
+                option2.textContent = entry;
+                secondChoiceSelect.appendChild(option2);
+                
+                // Add to third choice
+                const option3 = document.createElement('option');
+                option3.value = entry;
+                option3.textContent = entry;
+                thirdChoiceSelect.appendChild(option3);
+            });
+        }
+
+        // Validate that no duplicate selections are made
+        function validateSelections() {
+            const first = firstChoiceSelect.value;
+            const second = secondChoiceSelect.value;
+            const third = thirdChoiceSelect.value;
+            
+            // Check if all three are selected
+            if (!first || !second || !third) {
+                return { valid: false, message: 'Please select all three choices' };
+            }
+            
+            // Check for duplicates
+            if (first === second || first === third || second === third) {
+                return { valid: false, message: 'Please select three different entries' };
+            }
+            
+            return { valid: true };
+        }
+
+        // Add real-time validation on selection change
+        [firstChoiceSelect, secondChoiceSelect, thirdChoiceSelect].forEach(select => {
+            select.addEventListener('change', function() {
+                const validation = validateSelections();
+                if (!validation.valid && firstChoiceSelect.value && secondChoiceSelect.value && thirdChoiceSelect.value) {
+                    showMessage(validation.message, 'error');
+                } else if (validation.valid) {
+                    messageDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Handle form submission
+        voteForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get current voter ID from input or select
+            if (voterIds.length === 1) {
+                voterId = voterIdInput.value.trim().toUpperCase();
+            } else {
+                voterId = voterIdSelect.value;
+            }
+            
+            // Validate voter ID
+            if (!voterId || voterId.length < 4) {
+                showMessage('Please enter or select a valid voter ID', 'error');
+                return;
+            }
+            
+            // Validate selections
+            const validation = validateSelections();
+            if (!validation.valid) {
+                showMessage(validation.message, 'error');
+                return;
+            }
+            
+            const voteData = {
+                voterId: voterId,
+                first: firstChoiceSelect.value,
+                second: secondChoiceSelect.value,
+                third: thirdChoiceSelect.value
+            };
+            
+            // Submit vote
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            try {
+                const response = await fetch('/api/vote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(voteData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const isUpdate = data.updated || false;
+                    const message = isUpdate ? 'Vote updated successfully!' : 'Vote submitted successfully!';
+                    showMessage(message, 'success');
+                    // Don't reset form so user can see their choices
+                } else {
+                    showMessage(data.error || 'Failed to submit vote', 'error');
+                }
+            } catch (error) {
+                showMessage('Unable to submit vote. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Vote';
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Load entries when page loads
+        loadEntries();
+    </script>
+</body>
+</html>

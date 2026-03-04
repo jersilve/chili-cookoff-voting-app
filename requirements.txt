@@ -1,0 +1,9 @@
+# Lambda function dependencies for Chili Cook-Off Voting Application
+# These packages are required by the Lambda handlers
+
+# AWS SDK for Python - used for DynamoDB operations
+# Note: Lambda runtime includes boto3, but we pin the version for reproducibility
+boto3==1.28.85
+
+# boto3 dependency - AWS low-level client library
+botocore==1.31.85

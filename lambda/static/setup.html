@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chili Cook-Off Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #d32f2f;
+        }
+        button {
+            background-color: #d32f2f;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #entryFields {
+            margin-top: 20px;
+        }
+        .entry-input {
+            margin-bottom: 10px;
+        }
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌶️ Chili Cook-Off Setup</h1>
+        <form id="setupForm">
+            <div class="form-group">
+                <label for="eventTitle">Event Title:</label>
+                <input 
+                    type="text" 
+                    id="eventTitle" 
+                    name="eventTitle" 
+                    required
+                    placeholder="Enter event title (e.g., Annual Chili Cook-Off 2024)"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="entryCount">Number of Teams (1-50):</label>
+                <input 
+                    type="number" 
+                    id="entryCount" 
+                    name="entryCount" 
+                    min="1" 
+                    max="50" 
+                    required
+                    placeholder="Enter number of teams"
+                >
+            </div>
+            
+            <div id="entryFields"></div>
+            
+            <button type="submit" id="submitBtn">Start the Chili</button>
+            <button type="button" id="resetBtn" style="background-color: #757575; margin-top: 10px;">Reset</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const eventTitleInput = document.getElementById('eventTitle');
+        const entryCountInput = document.getElementById('entryCount');
+        const entryFieldsContainer = document.getElementById('entryFields');
+        const setupForm = document.getElementById('setupForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const messageDiv = document.getElementById('message');
+
+        // Generate entry name input fields dynamically with default "Team X" values
+        entryCountInput.addEventListener('input', function() {
+            const count = parseInt(this.value);
+            entryFieldsContainer.innerHTML = '';
+            
+            if (count >= 1 && count <= 50) {
+                for (let i = 1; i <= count; i++) {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.className = 'entry-input';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = `Team ${i} Name:`;
+                    label.setAttribute('for', `entry${i}`);
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `entry${i}`;
+                    input.name = `entry${i}`;
+                    input.required = true;
+                    input.value = `Team ${i}`;
+                    input.placeholder = `Enter name for team ${i}`;
+                    
+                    entryDiv.appendChild(label);
+                    entryDiv.appendChild(input);
+                    entryFieldsContainer.appendChild(entryDiv);
+                }
+            }
+        });
+
+        // Handle reset button
+        resetBtn.addEventListener('click', function() {
+            setupForm.reset();
+            entryFieldsContainer.innerHTML = '';
+            messageDiv.style.display = 'none';
+        });
+
+        // Handle form submission
+        setupForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const eventTitle = eventTitleInput.value.trim();
+            const count = parseInt(entryCountInput.value);
+            
+            if (!eventTitle) {
+                showMessage('Please enter an event title', 'error');
+                return';
+            }
+            
+            if (count < 1 || count > 50) {
+                showMessage('Please enter a number between 1 and 50', 'error');
+                return;
+            }
+            
+            // Collect entry names
+            const entries = [];
+            for (let i = 1; i <= count; i++) {
+                const input = document.getElementById(`entry${i}`);
+                const name = input.value.trim();
+                
+                if (!name) {
+                    showMessage(`Team ${i} name cannot be empty`, 'error');
+                    return;
+                }
+                
+                entries.push(name);
+            }
+            
+            // Check for duplicate names
+            const uniqueEntries = new Set(entries);
+            if (uniqueEntries.size !== entries.length) {
+                showMessage('Team names must be unique', 'error');
+                return;
+            }
+            
+            // Submit to API
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Configuring...';
+            
+            try {
+                const response = await fetch('/api/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        eventTitle: eventTitle,
+                        entries: entries 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Event configured successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'Failed to configure entries', 'error');
+                }
+            } catch (error) {
+                showMessage('Unable to connect to server. Please check your connection.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Start the Chili';
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

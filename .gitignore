@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Testing
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+*.zip
+*.egg-info/
+dist/
+build/
+
+# QR codes (generated)
+qr-codes/
+
+# Kiro
+.kiro/
+
+# Local development
+*.log
+.env
