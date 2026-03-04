@@ -140,6 +140,30 @@ Be aware of these CloudShell limitations:
 3. **Compute**: Limited compute resources (sufficient for this deployment)
 4. **Region**: CloudShell runs in specific regions - ensure you're in a supported region
 
+### QR Code Generation in CloudShell
+
+CloudShell has limited storage space. You have two options for QR codes:
+
+**Option 1: Install dependencies (uses ~50MB)**
+```bash
+./install-qr-deps-cloudshell.sh
+./deploy.sh
+```
+
+**Option 2: Skip local generation and use online tools**
+```bash
+./deploy.sh  # Will skip QR generation if dependencies not installed
+# Then use the provided URLs with online QR code generators
+```
+
+**Option 3: Generate QR codes via API (no dependencies)**
+```bash
+./deploy.sh
+# After deployment, run:
+./generate-qr-urls.sh <YOUR-ALB-URL>
+# This provides direct download links for QR codes
+```
+
 ## Troubleshooting
 
 ### Issue: "Command not found: pip"

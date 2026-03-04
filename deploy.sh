@@ -302,11 +302,13 @@ generate_qr_codes() {
     echo "========================================="
     echo ""
     
-    # Create qr-codes directory if it doesn't exist
-    mkdir -p qr-codes
-    
-    # Generate QR codes using Python
-    python3 << EOF
+    # Check if qrcode module is available
+    if python3 -c "import qrcode" 2>/dev/null; then
+        # Create qr-codes directory if it doesn't exist
+        mkdir -p qr-codes
+        
+        # Generate QR codes using Python
+        python3 << EOF
 import qrcode
 import sys
 
@@ -337,22 +339,29 @@ for name, url in urls.items():
 
 print("All QR codes saved in ./qr-codes/ directory")
 EOF
-    
-    if [ $? -eq 0 ]; then
-        echo ""
-        print_success "QR codes generated successfully!"
-        echo ""
-        echo "QR codes saved in: ./qr-codes/"
-        echo "  - setup_qr_code.png (Setup page)"
-        echo "  - voting_qr_code.png (Voting page)"
-        echo "  - leaderboard_qr_code.png (Leaderboard page)"
-        echo ""
+        
+        if [ $? -eq 0 ]; then
+            echo ""
+            print_success "QR codes generated successfully!"
+            echo ""
+            echo "QR codes saved in: ./qr-codes/"
+            echo "  - setup_qr_code.png (Setup page)"
+            echo "  - voting_qr_code.png (Voting page)"
+            echo "  - leaderboard_qr_code.png (Leaderboard page)"
+            echo ""
+        fi
     else
-        echo "WARNING: Failed to generate QR codes"
-        echo "You can manually create QR codes for:"
-        echo "  - Setup: ${base_url}/static/setup.html"
-        echo "  - Voting: ${base_url}/static/vote.html"
+        print_info "QR code generation skipped (qrcode module not installed)"
+        echo ""
+        echo "To generate QR codes locally, install: pip install qrcode[pil]"
+        echo ""
+        echo "Or use online QR code generators with these URLs:"
+        echo "  - Setup:       ${base_url}/static/setup.html"
+        echo "  - Voting:      ${base_url}/static/vote.html"
         echo "  - Leaderboard: ${base_url}/static/leaderboard.html"
+        echo ""
+        echo "Recommended online QR code generator: https://www.qr-code-generator.com/"
+        echo ""
     fi
 }
 
