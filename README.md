@@ -1,15 +1,53 @@
 # Chili Cook-Off Voting Application
 
+[![Tests](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/workflows/Tests/badge.svg)](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/actions)
+[![Lint](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/workflows/Lint/badge.svg)](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20DynamoDB-orange.svg)](https://aws.amazon.com/)
+
 A serverless web application for running chili competitions with ranked voting and real-time leaderboards. Built on AWS using Lambda, DynamoDB, and Application Load Balancer.
+
+## Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Deployment](#deployment)
+- [Usage](#usage)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
-- **Setup Interface**: Configure competition entries with custom names
-- **Voting Interface**: Cast ranked votes for top 3 chili entries
-- **Leaderboard Interface**: View real-time rankings with automatic updates
+- **Setup Interface**: Configure competition entries with custom names and event titles
+- **Voting Interface**: Cast ranked votes for top 3 chili entries with anonymous voter IDs
+- **Leaderboard Interface**: View real-time rankings with automatic updates and tied rankings
+- **Multi-Voter Support**: Allow multiple voters per device (great for families)
 - **Automated Deployment**: One-command deployment to AWS
 - **Automated Teardown**: Clean removal of all AWS resources
-- **Email Notifications**: Automatic email with URLs and QR codes after deployment
+- **QR Code Generation**: Automatic QR codes for easy mobile access
+- **CloudShell Support**: Deploy from anywhere using AWS CloudShell
+- **Security Hardened**: Input validation, security headers, and DynamoDB encryption
+- **Comprehensive Testing**: Unit tests and property-based tests included
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR-USERNAME/chili-cookoff-voting-app.git
+cd chili-cookoff-voting-app
+
+# Deploy to AWS
+./deploy.sh
+
+# After your event, clean up
+./teardown.sh
+```
+
+That's it! The deployment script will output URLs for setup, voting, and leaderboard pages.
 
 ## Architecture
 
@@ -590,6 +628,22 @@ To modify web interfaces:
 
 This project is provided as-is for educational and event purposes.
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## Acknowledgments
+
+- Built with AWS serverless technologies
+- Tested with pytest and Hypothesis for property-based testing
+- Inspired by the need for simple, fun event voting systems
+
 ## Support
 
-For issues, questions, or contributions, please refer to the troubleshooting section above or check AWS CloudWatch Logs for detailed error information.
+For issues, questions, or contributions:
+- Open an [issue](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/issues)
+- Submit a [pull request](https://github.com/YOUR-USERNAME/chili-cookoff-voting-app/pulls)
+- Check the [troubleshooting section](#troubleshooting) in this README
+- Review [CloudWatch Logs](https://console.aws.amazon.com/cloudwatch/) for detailed error information
