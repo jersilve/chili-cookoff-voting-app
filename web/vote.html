@@ -177,6 +177,13 @@
         </form>
         
         <div id="message" class="message"></div>
+
+        <div id="currentVotes" style="display: none; margin-top: 20px; padding: 20px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 4px;">
+            <h3 style="color: #2e7d32; margin-top: 0;">🗳️ Your Current Votes</h3>
+            <p style="margin: 5px 0;"><strong>🥇 1st:</strong> <span id="currentFirst">—</span></p>
+            <p style="margin: 5px 0;"><strong>🥈 2nd:</strong> <span id="currentSecond">—</span></p>
+            <p style="margin: 5px 0;"><strong>🥉 3rd:</strong> <span id="currentThird">—</span></p>
+        </div>
     </div>
 
     <script>
@@ -286,6 +293,7 @@
         // Handle voter ID select change
         voterIdSelect.addEventListener('change', function() {
             voterId = voterIdSelect.value;
+            displayCurrentVotes();
         });
 
         // Handle add voter button click
@@ -465,7 +473,9 @@
                     const isUpdate = data.updated || false;
                     const message = isUpdate ? 'Vote updated successfully!' : 'Vote submitted successfully!';
                     showMessage(message, 'success');
-                    // Don't reset form so user can see their choices
+                    // Save votes locally and update display
+                    saveVoterVotes(voterId, voteData.first, voteData.second, voteData.third);
+                    displayCurrentVotes();
                 } else {
                     showMessage(data.error || 'Failed to submit vote', 'error');
                 }
@@ -492,6 +502,36 @@
 
         // Load entries when page loads
         loadEntries();
+
+        // Save votes for a voter to localStorage
+        function saveVoterVotes(id, first, second, third) {
+            const allVotes = JSON.parse(localStorage.getItem('chilicookoff_votes') || '{}');
+            allVotes[id] = { first, second, third };
+            localStorage.setItem('chilicookoff_votes', JSON.stringify(allVotes));
+        }
+
+        // Get saved votes for a voter from localStorage
+        function getVoterVotes(id) {
+            const allVotes = JSON.parse(localStorage.getItem('chilicookoff_votes') || '{}');
+            return allVotes[id] || null;
+        }
+
+        // Display current votes for the active voter
+        function displayCurrentVotes() {
+            const currentVotesDiv = document.getElementById('currentVotes');
+            const votes = getVoterVotes(voterId);
+            if (votes) {
+                document.getElementById('currentFirst').textContent = votes.first;
+                document.getElementById('currentSecond').textContent = votes.second;
+                document.getElementById('currentThird').textContent = votes.third;
+                currentVotesDiv.style.display = 'block';
+            } else {
+                currentVotesDiv.style.display = 'none';
+            }
+        }
+
+        // Show current votes on page load
+        displayCurrentVotes();
     </script>
 </body>
 </html>
